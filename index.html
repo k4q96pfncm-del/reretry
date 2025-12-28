@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Item Shop</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Galmuri9&display=swap');
+
+        :root {
+            /* 색상 변수 */
+            --window-bg: #c0c0c0;
+            --highlight: #ffffff;
+            --shadow: #808080;
+            --dark-shadow: #000000;
+            --win-blue: #000080;
+            --radius-outer: 12px;
+            --radius-inner: 8px;
+        }
+
+        body {
+            background-color: transparent; /* 배경 투명하게 */
+            font-family: 'Galmuri9', 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .window {
+            background-color: var(--window-bg);
+            width: 320px;
+            padding: 4px;
+            border-radius: var(--radius-outer);
+            box-shadow: inset -1px -1px var(--dark-shadow), 
+                        inset 1px 1px var(--highlight), 
+                        inset -2px -2px var(--shadow), 
+                        inset 2px 2px #dfdfdf;
+            filter: drop-shadow(4px 4px 10px rgba(0,0,0,0.3));
+            display: flex;
+            flex-direction: column;
+        }
+
+        .title-bar {
+            background: linear-gradient(90deg, var(--win-blue), #1084d0);
+            padding: 4px 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            border-radius: var(--radius-inner) var(--radius-inner) 2px 2px;
+            flex-shrink: 0;
+        }
+
+        .title-bar-text {
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            letter-spacing: 1px;
+            margin-left: 2px;
+            text-shadow: 1px 1px 0px rgba(0,0,0,0.5);
+        }
+
+        .title-bar-controls { display: flex; gap: 2px; }
+
+        .btn {
+            background: var(--window-bg);
+            width: 16px;
+            height: 14px;
+            border: 1px solid;
+            border-color: var(--highlight) var(--dark-shadow) var(--dark-shadow) var(--highlight);
+            box-shadow: 1px 1px 0px 0px black;
+            font-size: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            color: black;
+        }
+
+        .btn:active {
+            border-color: var(--dark-shadow) var(--highlight) var(--highlight) var(--dark-shadow);
+            transform: translate(1px, 1px);
+            box-shadow: none;
+        }
+
+        /* 아이템 목록 영역 (그리드 배치) */
+        .content-area {
+            background: white;
+            border-radius: var(--radius-inner);
+            border: 2px inset #dfdfdf;
+            box-shadow: inset 1px 1px 4px rgba(0,0,0,0.1);
+            height: 220px;
+            padding: 10px;
+            overflow-y: auto;
+            
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 한 줄에 3개 */
+            gap: 10px;
+            align-content: start;
+        }
+
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #dfdfdf; border-radius: 0 0 var(--radius-inner) 0; }
+        ::-webkit-scrollbar-thumb { 
+            background: #c0c0c0; border: 1px solid white; box-shadow: inset -1px -1px black;
+        }
+
+        /* 개별 아이템 카드 */
+        .shop-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 6px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .shop-item:hover { border: 1px dotted #888; }
+
+        /* 선택됨(구매) 상태 */
+        .shop-item.selected {
+            background-color: var(--win-blue);
+            color: white;
+            border: 1px solid var(--win-blue);
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .item-image {
+            width: 48px;
+            height: 48px;
+            background-color: #eee;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            object-fit: cover;
+            border: 2px inset #fff;
+        }
+
+        .item-name {
+            font-size: 11px;
+            margin-bottom: 4px;
+            text-align: center;
+            word-break: keep-all;
+            line-height: 1.2;
+        }
+
+        .item-price {
+            font-size: 10px;
+            color: #666;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        
+        .shop-item.selected .item-name { color: white; font-weight: bold; }
+        .shop-item.selected .item-price { color: #ffeb3b; }
+
+        .loading { grid-column: 1 / -1; text-align: center; margin-top: 40px; color: #888; }
+        
+        /* 하단 합계 바 */
+        .status-bar {
+            margin-top: 6px; 
+            padding: 2px 6px; 
+            font-size: 11px; 
+            color: #333; 
+            background: #dfdfdf;
+            border: 1px inset white;
+            display: flex; 
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="window">
+        <div class="title-bar">
+            <div class="title-bar-text">ITEM_SHOP.EXE</div>
+            <div class="title-bar-controls">
+                <div class="btn">_</div>
+                <div class="btn">□</div>
+                <div class="btn">X</div>
+            </div>
+        </div>
+        
+        <div class="content-area" id="itemList">
+            <div class="loading">Loading...</div>
+        </div>
+        
+        <div class="status-bar">
+            <span>TOTAL:</span>
+            <span id="totalPrice">₩0</span>
+        </div>
+    </div>
+
+    <script>
+        const itemListElement = document.getElementById('itemList');
+        const totalPriceElement = document.getElementById('totalPrice');
+
+        // ============================================================
+        // [★수정구역] 내 노션 데이터베이스 속성 이름을 정확히 적어주세요!
+        // (대소문자, 띄어쓰기까지 똑같아야 합니다)
+        // ============================================================
+        
+        // 1. 아이템 이름 칼럼 (예: Name, 이름, 상품명)
+        const COLUMN_NAME = 'item'; 
+
+        // 2. [필수] 가격 칼럼 (숫자 속성) (예: Price, 가격, 금액)
+        const COLUMN_PRICE = 'Price'; 
+
+        // 3. [선택] 이미지 칼럼 (파일 및 미디어 속성) (예: Image, 사진)
+        // (없으면 비워두셔도 됩니다)
+        const COLUMN_IMAGE = 'Image';
+
+        // ============================================================
+
+        let currentTotal = 0;
+
+        async function fetchItems() {
+            try {
+                // api/notion.js 호출 (은행원에게 부탁)
+                const response = await fetch('/api/notion'); 
+                const data = await response.json();
+
+                if (data.results) {
+                    renderItems(data.results);
+                } else {
+                    itemListElement.innerHTML = "No Data";
+                }
+            } catch (error) {
+                console.error(error);
+                itemListElement.innerHTML = '<div style="color:red; text-align:center;">Error!</div>';
+            }
+        }
+
+        function renderItems(data) {
+            itemListElement.innerHTML = '';
+            
+            data.forEach(item => {
+                // ---------------------------------------------------------
+                // 데이터 꺼내기 (안전장치 포함)
+                // ---------------------------------------------------------
+                
+                // 1. 이름
+                const nameProp = item.properties[COLUMN_NAME];
+                // 만약 여기서 에러가 난다면 COLUMN_NAME 변수 값이 틀린 것입니다.
+                const name = nameProp?.title[0]?.plain_text || "이름 없음";
+
+                // 2. 가격
+                const priceProp = item.properties[COLUMN_PRICE];
+                const price = priceProp?.number || 0;
+
+                // 3. 이미지
+                let imageUrl = "https://via.placeholder.com/48?text=Item"; // 기본 이미지
+                const imageProp = item.properties[COLUMN_IMAGE];
+                if (imageProp?.files && imageProp.files.length > 0) {
+                    // 노션에 업로드된 파일이나 외부 링크 가져오기
+                    imageUrl = imageProp.files[0].file?.url || imageProp.files[0].external?.url;
+                }
+
+                // ---------------------------------------------------------
+
+                const div = document.createElement('div');
+                div.className = 'shop-item';
+                div.innerHTML = `
+                    <img src="${imageUrl}" class="item-image" alt="${name}" onerror="this.src='https://via.placeholder.com/48?text=Error'">
+                    <span class="item-name">${name}</span>
+                    <span class="item-price">₩${price.toLocaleString()}</span>
+                `;
+
+                // 클릭 시 선택/해제 및 합계 계산
+                div.addEventListener('click', () => {
+                    div.classList.toggle('selected');
+                    const isSelected = div.classList.contains('selected');
+
+                    if (isSelected) {
+                        currentTotal += price;
+                    } else {
+                        currentTotal -= price;
+                    }
+
+                    totalPriceElement.innerText = `₩${currentTotal.toLocaleString()}`;
+                });
+
+                itemListElement.appendChild(div);
+            });
+        }
+
+        // 진짜 데이터 가져오기 실행
+        fetchItems();
+
+    </script>
+</body>
+</html>
