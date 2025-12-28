@@ -214,7 +214,7 @@
 
     <div class="window">
         <div class="title-bar">
-            <div class="title-bar-text">♥ PASTEL_SHOP.exe</div>
+            <div class="title-bar-text">♥ WISHLIST_SHOP.exe</div>
             <div class="title-bar-controls">
                 <div class="btn-win">_</div>
                 <div class="btn-win">□</div> <!-- 버튼 모양 텍스트도 살짝 변경 -->
@@ -232,7 +232,7 @@
         <div class="control-panel">
             <div class="total-section">
                 <!-- [수정] TOTAL -> 남은 돈 -->
-                <span class="total-label">남은 돈:</span>
+                <span class="total-label">GOLD:</span>
                 <span class="total-price" id="balanceDisplay">--</span>
             </div>
             <div class="btn-group">
@@ -253,7 +253,7 @@
         const COLUMN_PRICE = 'Price'; 
         const COLUMN_IMAGE = 'Image';
         // [추가] 내 데이터베이스의 "남은 돈" 속성 이름
-        const COLUMN_REMAINING = '남은 돈'; 
+        const COLUMN_REMAINING = 'GOLD'; 
         // ============================================================
 
         let selectedItemsTotal = 0; // 선택한 아이템들의 합계 (내부 계산용)
