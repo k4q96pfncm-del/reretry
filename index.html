@@ -3,23 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retro Item Shop</title>
+    <title>Pastel Item Shop</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Galmuri9&display=swap');
 
         :root {
-            --bg-color: #008080;
-            --window-bg: #c0c0c0;
+            /* 배경: 연한 파스텔 핑크 */
+            --bg-color: #ffe6eb;
+            /* 창 배경: 아주 연한 회색/흰색 */
+            --window-bg: #fdfdfd;
+            /* 하이라이트: 흰색 */
             --highlight: #ffffff;
-            --shadow: #808080;
-            --dark-shadow: #000000;
-            --win-blue: #000080;
+            /* 그림자: 진한 검정 대신 연한 보라빛 회색 사용 */
+            --shadow: #b0b0c0;
+            --dark-shadow: #8a8a9b;
+            /* 타이틀바 그라데이션: 파스텔 블루 -> 핑크 */
+            --title-start: #a1c4fd;
+            --title-end: #c2e9fb;
+            /* 포인트 컬러 (선택 시) */
+            --accent-color: #ffb7b2; 
+            
             --radius-outer: 12px;
             --radius-inner: 8px;
         }
 
         body {
-            background-color: transparent;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#ffcdd2 1px, transparent 1px);
+            background-size: 20px 20px;
             font-family: 'Galmuri9', 'Courier New', monospace;
             display: flex;
             justify-content: center;
@@ -31,110 +42,110 @@
 
         .window {
             background-color: var(--window-bg);
-            width: 320px;
-            padding: 4px;
+            width: 340px;
+            padding: 6px;
             border-radius: var(--radius-outer);
             box-shadow: inset -1px -1px var(--dark-shadow), 
                         inset 1px 1px var(--highlight), 
                         inset -2px -2px var(--shadow), 
-                        inset 2px 2px #dfdfdf;
-            filter: drop-shadow(4px 4px 10px rgba(0,0,0,0.3));
+                        inset 2px 2px #ffffff;
+            filter: drop-shadow(8px 8px 15px rgba(100, 100, 100, 0.15));
             display: flex;
             flex-direction: column;
         }
 
         .title-bar {
-            background: linear-gradient(90deg, var(--win-blue), #1084d0);
-            padding: 4px 5px;
+            background: linear-gradient(90deg, var(--title-start), var(--title-end));
+            padding: 6px 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 6px;
-            border-radius: var(--radius-inner) var(--radius-inner) 2px 2px;
+            margin-bottom: 8px;
+            border-radius: var(--radius-inner) var(--radius-inner) 4px 4px;
             flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.5);
         }
 
         .title-bar-text {
-            color: white;
+            color: #556677;
             font-weight: bold;
             font-size: 14px;
             letter-spacing: 1px;
-            margin-left: 2px;
-            text-shadow: 1px 1px 0px rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.8);
         }
 
-        .title-bar-controls { display: flex; gap: 2px; }
+        .title-bar-controls { display: flex; gap: 4px; }
 
-        .btn {
+        .btn-win {
             background: var(--window-bg);
             width: 16px;
-            height: 14px;
-            border: 1px solid;
-            border-color: var(--highlight) var(--dark-shadow) var(--dark-shadow) var(--highlight);
-            box-shadow: 1px 1px 0px 0px black;
-            font-size: 8px;
+            height: 16px;
+            border: 1px solid #aaa;
+            /* [수정] 원형(50%) -> 라운드 스퀘어(4px) 변경 */
+            border-radius: 4px; 
             display: flex;
             justify-content: center;
             align-items: center;
+            font-size: 9px;
+            color: #888;
             cursor: pointer;
-            color: black;
-        }
-
-        .btn:active {
-            border-color: var(--dark-shadow) var(--highlight) var(--highlight) var(--dark-shadow);
-            transform: translate(1px, 1px);
-            box-shadow: none;
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
 
         .content-area {
-            background: white;
+            background: #fffafa;
             border-radius: var(--radius-inner);
-            border: 2px inset #dfdfdf;
-            box-shadow: inset 1px 1px 4px rgba(0,0,0,0.1);
-            height: 220px;
-            padding: 10px;
+            border: 2px inset #eee;
+            box-shadow: inset 1px 1px 6px rgba(0,0,0,0.05);
+            height: 240px;
+            padding: 12px;
             overflow-y: auto;
             
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 12px;
             align-content: start;
         }
 
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: #dfdfdf; border-radius: 0 0 var(--radius-inner) 0; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { 
-            background: #c0c0c0; border: 1px solid white; box-shadow: inset -1px -1px black;
+            background: #e0e0e0; border-radius: 4px;
         }
 
         .shop-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 6px;
-            border: 1px solid transparent;
-            border-radius: 4px;
+            padding: 8px;
+            background: white;
+            border: 1px solid #f0f0f0;
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.1s;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        .shop-item:hover { border: 1px dotted #888; }
+        .shop-item:hover { 
+            transform: translateY(-2px);
+            border-color: var(--accent-color);
+        }
 
         .shop-item.selected {
-            background-color: var(--win-blue);
+            background-color: var(--accent-color);
             color: white;
-            border: 1px solid var(--win-blue);
-            box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            border-color: var(--accent-color);
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.1);
         }
 
         .item-image {
-            width: 48px;
-            height: 48px;
-            background-color: #eee;
-            border-radius: 4px;
+            width: 50px;
+            height: 50px;
+            background-color: #f8f8f8;
+            border-radius: 6px;
             margin-bottom: 6px;
             object-fit: cover;
-            border: 2px inset #fff;
+            border: 1px solid #eee;
         }
 
         .item-name {
@@ -142,38 +153,62 @@
             margin-bottom: 4px;
             text-align: center;
             word-break: keep-all;
-            line-height: 1.2;
+            line-height: 1.3;
+            color: #555;
         }
-
+        
         .item-price {
             font-size: 10px;
-            color: #666;
+            color: #888;
             font-family: 'Courier New', monospace;
             font-weight: bold;
         }
-        
-        .shop-item.selected .item-name { color: white; font-weight: bold; }
-        .shop-item.selected .item-price { color: #ffeb3b; }
 
-        .loading { grid-column: 1 / -1; text-align: center; margin-top: 40px; color: #888; }
+        .shop-item.selected .item-name { color: white; font-weight: bold; }
+        .shop-item.selected .item-price { color: rgba(255,255,255,0.9); }
+
+        .loading { grid-column: 1 / -1; text-align: center; margin-top: 60px; color: #aaa; font-size: 12px; }
         
-        .status-bar {
-            margin-top: 6px; 
-            padding: 2px 6px; 
-            font-size: 11px; 
-            color: #333; 
-            background: #dfdfdf;
-            border: 1px inset white;
-            display: flex; 
+        .control-panel {
+            margin-top: 8px;
+            padding: 8px;
+            background: #f0f4f8;
+            border-radius: var(--radius-inner);
+            display: flex;
             justify-content: space-between;
             align-items: center;
-            font-weight: bold;
+            border: 1px solid white;
+            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* 라벨 텍스트 색상 변경 */
+        .total-label { font-size: 11px; color: #556677; font-weight: bold; }
+        .total-price { font-size: 14px; font-weight: bold; color: #e91e63; margin-left: 4px; }
+
+        .btn-group { display: flex; gap: 6px; }
+
+        .action-btn {
+            padding: 4px 10px;
+            font-family: 'Galmuri9';
+            font-size: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            transition: all 0.1s;
+        }
+
+        /* [수정] 초기화 버튼 스타일 삭제됨, 구매 버튼만 남음 */
+        .btn-buy { background: #ffb7b2; color: white; font-weight: bold; width: 100%; }
+
+        .action-btn:active {
+            transform: translate(1px, 1px);
+            box-shadow: none;
         }
         
         .error-msg {
-            grid-column: 1 / -1; color: red; text-align: center; font-size: 11px;
-            padding: 10px; background: #ffe6e6; border: 1px solid red; border-radius: 4px;
-            word-break: break-all;
+            grid-column: 1 / -1; color: #e57373; text-align: center; font-size: 11px;
+            padding: 10px; background: #ffebee; border: 1px solid #ef9a9a; border-radius: 8px;
         }
     </style>
 </head>
@@ -181,72 +216,83 @@
 
     <div class="window">
         <div class="title-bar">
-            <div class="title-bar-text">ITEM_SHOP.EXE</div>
+            <div class="title-bar-text">♥ PASTEL_SHOP.exe</div>
             <div class="title-bar-controls">
-                <div class="btn">_</div>
-                <div class="btn">□</div>
-                <div class="btn">X</div>
+                <div class="btn-win">_</div>
+                <div class="btn-win">□</div> <!-- 버튼 모양 텍스트도 살짝 변경 -->
+                <div class="btn-win">x</div>
             </div>
         </div>
         
         <div class="content-area" id="itemList">
-            <div class="loading">Loading...</div>
+            <div class="loading">
+                로딩중...<br>
+                ☁ ☁ ☁
+            </div>
         </div>
         
-        <div class="status-bar">
-            <span>TOTAL:</span>
-            <span id="totalPrice">₩0</span>
+        <div class="control-panel">
+            <div class="total-section">
+                <!-- [수정] TOTAL -> 남은 돈 -->
+                <span class="total-label">GOLD:</span>
+                <span class="total-price" id="balanceDisplay">--</span>
+            </div>
+            <div class="btn-group">
+                <!-- [수정] 초기화 버튼 삭제 -->
+                <button class="action-btn btn-buy" onclick="purchase()">구매하기</button>
+            </div>
         </div>
     </div>
 
     <script>
         const itemListElement = document.getElementById('itemList');
-        const totalPriceElement = document.getElementById('totalPrice');
+        const balanceDisplayElement = document.getElementById('balanceDisplay');
 
         // ============================================================
-        // [★수정구역] 내 노션 데이터베이스 속성 이름 확인!
+        // [설정 구역] 노션 데이터베이스 속성 이름
         // ============================================================
-        
-        const COLUMN_NAME = 'item';   // 아이템 이름
-        const COLUMN_PRICE = 'Price'; // 가격 (숫자)
-        const COLUMN_IMAGE = 'Image'; // 이미지 (선택사항)
-
+        const COLUMN_NAME = 'item';   
+        const COLUMN_PRICE = 'Price'; 
+        const COLUMN_IMAGE = 'Image';
+        // [추가] 내 데이터베이스의 "남은 돈" 속성 이름
+        const COLUMN_REMAINING = 'GOLD'
         // ============================================================
 
-        let currentTotal = 0;
+        let selectedItemsTotal = 0; // 선택한 아이템들의 합계 (내부 계산용)
 
         async function fetchItems() {
             try {
-                // api/notion 호출 (앞에 슬래시 뺌)
                 const response = await fetch('api/notion'); 
                 
-                if (!response.ok) throw new Error(`서버 에러 (${response.status})`);
+                if (!response.ok) throw new Error(`서버 연결 실패 (${response.status})`);
                 const data = await response.json();
 
                 if (data.results && data.results.length > 0) {
                     renderItems(data.results);
+                    
+                    // [핵심 원리] 데이터 로드 직후 "남은 돈" 속성 값 가져오기
+                    // 데이터베이스의 첫 번째 아이템(혹은 아무 아이템)에 있는 '남은 돈' 값을 읽어옵니다.
+                    const firstItem = data.results[0];
+                    const remainingMoney = firstItem.properties[COLUMN_REMAINING]?.number || 0;
+                    
+                    // 화면에 "남은 돈" 표시 (고정값)
+                    balanceDisplayElement.innerText = `₩${remainingMoney.toLocaleString()}`;
+
                 } else if (data.results && data.results.length === 0) {
-                    itemListElement.innerHTML = `<div class="loading">아이템이 없습니다.<br>(노션 표가 비어있음)</div>`;
+                    itemListElement.innerHTML = `<div class="loading">아이템이 없습니다.<br>(텅 비었어요!)</div>`;
                 } else if (data.object === 'error') {
-                    // [에러 원인 상세 출력]
-                    // 노션이 보낸 진짜 에러 메시지를 보여줍니다.
                     itemListElement.innerHTML = `
                         <div class="error-msg">
-                            <strong>노션 연결 거부 (${data.status})</strong><br>
-                            ${data.message}<br><br>
-                            <span style="color:#666">
-                            [힌트]<br>
-                            401: Vercel 환경변수 키 확인<br>
-                            404: DB ID 확인 또는 초대 안됨
-                            </span>
+                            <strong>연결 오류 ☁</strong><br>
+                            ${data.message}
                         </div>`;
                 } else {
-                    itemListElement.innerHTML = `<div class="error-msg">알 수 없는 데이터<br>${JSON.stringify(data)}</div>`;
+                    itemListElement.innerHTML = `<div class="error-msg">데이터 오류</div>`;
                 }
 
             } catch (error) {
                 console.error(error);
-                itemListElement.innerHTML = `<div class="error-msg">${error.message}</div>`;
+                itemListElement.innerHTML = `<div class="error-msg">API 호출 실패<br>Vercel 환경인지 확인해주세요.</div>`;
             }
         }
 
@@ -254,11 +300,10 @@
             itemListElement.innerHTML = '';
             
             data.forEach(item => {
-                // 데이터 안전하게 꺼내기
                 const name = item.properties[COLUMN_NAME]?.title[0]?.plain_text || "이름 없음";
                 const price = item.properties[COLUMN_PRICE]?.number || 0;
                 
-                let imageUrl = "https://via.placeholder.com/48?text=Item";
+                let imageUrl = "https://via.placeholder.com/50/ffebee/e57373?text=♥";
                 const imageProp = item.properties[COLUMN_IMAGE];
                 if (imageProp?.files && imageProp.files.length > 0) {
                     imageUrl = imageProp.files[0].file?.url || imageProp.files[0].external?.url;
@@ -267,24 +312,40 @@
                 const div = document.createElement('div');
                 div.className = 'shop-item';
                 div.innerHTML = `
-                    <img src="${imageUrl}" class="item-image" alt="${name}" onerror="this.src='https://via.placeholder.com/48?text=Error'">
+                    <img src="${imageUrl}" class="item-image" alt="${name}" onerror="this.src='https://via.placeholder.com/50/eee/aaa?text=x'">
                     <span class="item-name">${name}</span>
                     <span class="item-price">₩${price.toLocaleString()}</span>
                 `;
 
-                // 클릭 이벤트 (합계 계산)
+                // 클릭 이벤트
                 div.addEventListener('click', () => {
                     div.classList.toggle('selected');
                     const isSelected = div.classList.contains('selected');
 
-                    if (isSelected) currentTotal += price;
-                    else currentTotal -= price;
+                    if (isSelected) selectedItemsTotal += price;
+                    else selectedItemsTotal -= price;
 
-                    totalPriceElement.innerText = `₩${currentTotal.toLocaleString()}`;
+                    // [중요] 여기서는 "남은 돈" 텍스트를 업데이트하지 않습니다.
+                    // 사용자가 요청한 대로 DB에서 가져온 값만 표시되도록 유지합니다.
+                    // 필요하다면 나중에 "구매 시 차감" 로직을 추가할 수 있습니다.
                 });
 
                 itemListElement.appendChild(div);
             });
+        }
+
+        function purchase() {
+            if (selectedItemsTotal === 0) {
+                alert("장바구니가 텅 비었어요! 아이템을 골라주세요.");
+            } else {
+                // 현재는 구매 버튼을 누르면 선택한 금액만 알려줍니다.
+                alert(`선택하신 상품의 총 금액은 ${selectedItemsTotal.toLocaleString()}원 입니다.\n구매를 진행하시겠습니까?`);
+                
+                // 구매 후 초기화 (UI 선택 해제)
+                const allItems = document.querySelectorAll('.shop-item');
+                allItems.forEach(item => item.classList.remove('selected'));
+                selectedItemsTotal = 0;
+            }
         }
 
         fetchItems();
