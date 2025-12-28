@@ -8,7 +8,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Galmuri9&display=swap');
 
         :root {
-            /* 색상 변수 */
+            --bg-color: #008080;
             --window-bg: #c0c0c0;
             --highlight: #ffffff;
             --shadow: #808080;
@@ -19,7 +19,7 @@
         }
 
         body {
-            background-color: transparent; /* 배경 투명하게 */
+            background-color: transparent;
             font-family: 'Galmuri9', 'Courier New', monospace;
             display: flex;
             justify-content: center;
@@ -86,7 +86,6 @@
             box-shadow: none;
         }
 
-        /* 아이템 목록 영역 (그리드 배치) */
         .content-area {
             background: white;
             border-radius: var(--radius-inner);
@@ -97,7 +96,7 @@
             overflow-y: auto;
             
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 한 줄에 3개 */
+            grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             align-content: start;
         }
@@ -108,7 +107,6 @@
             background: #c0c0c0; border: 1px solid white; box-shadow: inset -1px -1px black;
         }
 
-        /* 개별 아이템 카드 */
         .shop-item {
             display: flex;
             flex-direction: column;
@@ -122,7 +120,6 @@
 
         .shop-item:hover { border: 1px dotted #888; }
 
-        /* 선택됨(구매) 상태 */
         .shop-item.selected {
             background-color: var(--win-blue);
             color: white;
@@ -160,7 +157,6 @@
 
         .loading { grid-column: 1 / -1; text-align: center; margin-top: 40px; color: #888; }
         
-        /* 하단 합계 바 */
         .status-bar {
             margin-top: 6px; 
             padding: 2px 6px; 
@@ -172,6 +168,11 @@
             justify-content: space-between;
             align-items: center;
             font-weight: bold;
+        }
+        
+        .error-msg {
+            grid-column: 1 / -1; color: red; text-align: center; font-size: 11px;
+            padding: 10px; background: #ffe6e6; border: 1px solid red; border-radius: 4px;
         }
     </style>
 </head>
@@ -202,19 +203,12 @@
         const totalPriceElement = document.getElementById('totalPrice');
 
         // ============================================================
-        // [★수정구역] 내 노션 데이터베이스 속성 이름을 정확히 적어주세요!
-        // (대소문자, 띄어쓰기까지 똑같아야 합니다)
+        // [★수정구역] 내 노션 데이터베이스 속성 이름 확인!
         // ============================================================
         
-        // 1. 아이템 이름 칼럼 (예: Name, 이름, 상품명)
-        const COLUMN_NAME = 'item'; 
-
-        // 2. [필수] 가격 칼럼 (숫자 속성) (예: Price, 가격, 금액)
-        const COLUMN_PRICE = 'Price'; 
-
-        // 3. [선택] 이미지 칼럼 (파일 및 미디어 속성) (예: Image, 사진)
-        // (없으면 비워두셔도 됩니다)
-        const COLUMN_IMAGE = 'Image';
+        const COLUMN_NAME = 'Name';   // 아이템 이름
+        const COLUMN_PRICE = 'Price'; // 가격 (숫자)
+        const COLUMN_IMAGE = 'Image'; // 이미지 (선택사항)
 
         // ============================================================
 
@@ -222,18 +216,23 @@
 
         async function fetchItems() {
             try {
-                // api/notion.js 호출 (은행원에게 부탁)
-                const response = await fetch('/api/notion'); 
+                // api/notion 호출 (앞에 슬래시 뺌)
+                const response = await fetch('api/notion'); 
+                
+                if (!response.ok) throw new Error(`서버 에러 (${response.status})`);
                 const data = await response.json();
 
-                if (data.results) {
+                if (data.results && data.results.length > 0) {
                     renderItems(data.results);
+                } else if (data.results && data.results.length === 0) {
+                    itemListElement.innerHTML = `<div class="loading">아이템이 없습니다.<br>(노션 표가 비어있음)</div>`;
                 } else {
-                    itemListElement.innerHTML = "No Data";
+                    itemListElement.innerHTML = `<div class="error-msg">데이터 로딩 실패</div>`;
                 }
+
             } catch (error) {
                 console.error(error);
-                itemListElement.innerHTML = '<div style="color:red; text-align:center;">Error!</div>';
+                itemListElement.innerHTML = `<div class="error-msg">${error.message}</div>`;
             }
         }
 
@@ -241,28 +240,15 @@
             itemListElement.innerHTML = '';
             
             data.forEach(item => {
-                // ---------------------------------------------------------
-                // 데이터 꺼내기 (안전장치 포함)
-                // ---------------------------------------------------------
+                // 데이터 안전하게 꺼내기
+                const name = item.properties[COLUMN_NAME]?.title[0]?.plain_text || "이름 없음";
+                const price = item.properties[COLUMN_PRICE]?.number || 0;
                 
-                // 1. 이름
-                const nameProp = item.properties[COLUMN_NAME];
-                // 만약 여기서 에러가 난다면 COLUMN_NAME 변수 값이 틀린 것입니다.
-                const name = nameProp?.title[0]?.plain_text || "이름 없음";
-
-                // 2. 가격
-                const priceProp = item.properties[COLUMN_PRICE];
-                const price = priceProp?.number || 0;
-
-                // 3. 이미지
-                let imageUrl = "https://via.placeholder.com/48?text=Item"; // 기본 이미지
+                let imageUrl = "https://via.placeholder.com/48?text=Item";
                 const imageProp = item.properties[COLUMN_IMAGE];
                 if (imageProp?.files && imageProp.files.length > 0) {
-                    // 노션에 업로드된 파일이나 외부 링크 가져오기
                     imageUrl = imageProp.files[0].file?.url || imageProp.files[0].external?.url;
                 }
-
-                // ---------------------------------------------------------
 
                 const div = document.createElement('div');
                 div.className = 'shop-item';
@@ -272,16 +258,13 @@
                     <span class="item-price">₩${price.toLocaleString()}</span>
                 `;
 
-                // 클릭 시 선택/해제 및 합계 계산
+                // 클릭 이벤트 (합계 계산)
                 div.addEventListener('click', () => {
                     div.classList.toggle('selected');
                     const isSelected = div.classList.contains('selected');
 
-                    if (isSelected) {
-                        currentTotal += price;
-                    } else {
-                        currentTotal -= price;
-                    }
+                    if (isSelected) currentTotal += price;
+                    else currentTotal -= price;
 
                     totalPriceElement.innerText = `₩${currentTotal.toLocaleString()}`;
                 });
@@ -290,9 +273,7 @@
             });
         }
 
-        // 진짜 데이터 가져오기 실행
         fetchItems();
-
     </script>
 </body>
 </html>
