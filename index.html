@@ -44,6 +44,8 @@
             filter: drop-shadow(8px 8px 15px rgba(100, 100, 100, 0.15));
             display: flex;
             flex-direction: column;
+            position: relative;
+            z-index: 10;
         }
 
         .title-bar {
@@ -172,7 +174,14 @@
             box-shadow: inset 1px 1px 3px rgba(0,0,0,0.05);
         }
 
-        .total-label { font-size: 11px; color: #556677; font-weight: bold; cursor: help; }
+        .sync-indicator {
+            width: 8px; height: 8px; border-radius: 50%;
+            background-color: #aaa; margin-left: 6px;
+            transition: background-color 0.3s;
+        }
+        .sync-active { background-color: #4caf50; box-shadow: 0 0 5px #4caf50; }
+
+        .total-label { font-size: 11px; color: #556677; font-weight: bold; cursor: help; display: flex; align-items: center; }
         .total-price { font-size: 14px; font-weight: bold; color: #e91e63; margin-left: 4px; }
 
         .btn-group { display: flex; gap: 6px; }
@@ -222,18 +231,25 @@
         
         <div class="control-panel">
             <div class="total-section">
-                <span class="total-label" onclick="showDebugInfo()">GOLD:</span>
+                <span class="total-label" onclick="showDebugInfo()">
+                    GOLD
+                    <div class="sync-indicator" id="syncDot" title="자동 동기화 중"></div>:
+                </span>
                 <span class="total-price" id="balanceDisplay">--</span>
             </div>
             <div class="btn-group">
+                <!-- AI 버튼 삭제됨 -->
                 <button class="action-btn btn-buy" onclick="purchase()">구매하기</button>
             </div>
         </div>
     </div>
 
+    <!-- AI 모달 관련 코드 삭제됨 -->
+
     <script>
         const itemListElement = document.getElementById('itemList');
         const balanceDisplayElement = document.getElementById('balanceDisplay');
+        const syncDot = document.getElementById('syncDot');
 
         // ============================================================
         // [설정 구역]
@@ -242,61 +258,68 @@
         const COLUMN_PRICE = 'Price'; 
         const COLUMN_IMAGE = 'Image';
         const COLUMN_REMAINING = 'GOLD'; 
+        const UPDATE_INTERVAL = 2000; 
         // ============================================================
 
         let selectedItemsTotal = 0;
-        let selectedItemNames = new Set();
+        let selectedItemNames = new Set(); 
         let lastDebugInfo = "데이터 로딩 전";
 
-        // [New] 더 강력해진 숫자 탐정 함수 (텍스트로 된 숫자도 변환)
+        // [업그레이드] 롤업 내부의 수식(Formula)까지 꼼꼼하게 확인하는 함수
         function getSafeNumber(prop) {
             if (!prop) return 0;
-            
-            // [원리] 어떤 값이 들어오든 숫자만 쏙 뽑아내는 내부 함수
             const extractNum = (val) => {
                 if (typeof val === 'number') return val;
                 if (!val) return 0;
-                // 문자열인 경우: 쉼표, 특수문자 제거하고 숫자만 파싱 ("40,000" -> 40000)
+                // 문자열에서 숫자만 추출 (예: "₩5,000" -> 5000)
                 const str = String(val).replace(/[^0-9.-]/g, '');
                 return parseFloat(str) || 0;
             };
             
-            // 1. 순수 숫자
+            // 1. 숫자 타입
             if (prop.type === 'number') return extractNum(prop.number);
             
-            // 2. 수식
+            // 2. 수식 타입
             if (prop.type === 'formula') {
                 if (prop.formula.type === 'number') return extractNum(prop.formula.number);
                 if (prop.formula.type === 'string') return extractNum(prop.formula.string);
             }
             
-            // 3. 롤업 (문제의 구간!)
+            // 3. 롤업 타입 (여기가 중요!)
             if (prop.type === 'rollup') {
                 if (prop.rollup.type === 'number') return extractNum(prop.rollup.number);
                 
+                // 롤업이 배열(리스트)인 경우 하나씩 뜯어봅니다.
                 if (prop.rollup.type === 'array') {
                     for (const item of prop.rollup.array) {
-                        // A. 숫자
-                        if (item.type === 'number') return extractNum(item.number);
+                        let val = 0;
+
+                        // A. 숫자 타입 확인
+                        if (item.type === 'number') val = extractNum(item.number);
                         
-                        // B. 수식 (수식 결과가 텍스트여도 처리)
-                        if (item.type === 'formula') {
-                            if (item.formula.type === 'number') return extractNum(item.formula.number);
-                            if (item.formula.type === 'string') return extractNum(item.formula.string);
+                        // B. 수식 타입 확인 (숫자 결과 & 문자 결과 모두 체크)
+                        else if (item.type === 'formula') {
+                            if (item.formula.type === 'number') val = extractNum(item.formula.number);
+                            else if (item.formula.type === 'string') val = extractNum(item.formula.string);
+                        }
+                        
+                        // C. 텍스트 타입 확인
+                        else if (item.type === 'rich_text' && item.rich_text.length > 0) {
+                            val = extractNum(item.rich_text[0].plain_text);
                         }
 
-                        // C. 텍스트 ("40000" 이라고 적힌 글자 처리)
-                        if (item.type === 'rich_text' && item.rich_text.length > 0) {
-                            return extractNum(item.rich_text[0].plain_text);
-                        }
+                        // 0이 아닌 유효한 값을 찾았다면 즉시 반환!
+                        if (val !== 0) return val;
                     }
                 }
             }
             return 0;
         }
 
-        async function fetchItems() {
+        async function fetchItems(isAutoUpdate = false) {
             try {
+                if (isAutoUpdate) syncDot.classList.add('sync-active');
+
                 const timestamp = new Date().getTime();
                 const response = await fetch(`api/notion?t=${timestamp}`); 
                 
@@ -307,65 +330,43 @@
                     renderItems(data.results);
                     
                     let foundMoney = 0;
-                    let debugStatus = "값을 찾지 못함 (전체 0원)";
-                    let debugDetail = "";
+                    let debugStatus = "값을 찾지 못함";
 
-                    // 모든 아이템을 뒤져서 GOLD 찾기
                     for (let i = 0; i < data.results.length; i++) {
                         const item = data.results[i];
                         const remainingProp = item.properties[COLUMN_REMAINING];
                         
                         if (remainingProp) {
                             const val = getSafeNumber(remainingProp);
-                            
-                            if (i === 0) {
-                                debugDetail = JSON.stringify(remainingProp, null, 2);
-                            }
-
                             if (val > 0) {
                                 foundMoney = val;
-                                debugStatus = `성공! ${i+1}번째 아이템에서 발견`;
+                                debugStatus = `성공! ${i+1}번째 아이템에서 값 ${val} 발견`;
                                 break;
                             }
                         }
                     }
 
                     if (foundMoney === 0) {
-                        const firstItemProps = data.results[0].properties;
-                        if (!firstItemProps[COLUMN_REMAINING]) {
-                            lastDebugInfo = `실패: '${COLUMN_REMAINING}' 속성 자체가 없음.\n(현재 있는 속성들: ${Object.keys(firstItemProps).join(', ')})`;
-                        } else {
-                            lastDebugInfo = `실패: 속성은 있으나 숫자 추출 실패.\n\n[노션 데이터 원본]:\n${debugDetail}`;
-                        }
-                    } else {
-                         lastDebugInfo = debugStatus;
+                        debugStatus = `실패: 값이 0이거나 비어있음`;
                     }
                     
-                    // [원리] toLocaleString() 함수가 자동으로 3자리마다 쉼표를 찍어줍니다.
-                    // 예: 40000 -> "40,000"
+                    lastDebugInfo = debugStatus;
                     balanceDisplayElement.innerText = `₩${foundMoney.toLocaleString()}`;
 
                 } else if (data.results && data.results.length === 0) {
-                    itemListElement.innerHTML = `<div class="loading">아이템이 없습니다.</div>`;
+                    if (!isAutoUpdate) itemListElement.innerHTML = `<div class="loading">아이템이 없습니다.</div>`;
                 }
 
             } catch (error) {
                 console.error(error);
-                itemListElement.innerHTML = `<div class="error-msg">API 호출 실패</div>`;
-            }
-        }
-
-        window.showDebugInfo = function() {
-            if (document.getElementById('balanceDisplay').innerText === '₩0') {
-                alert(`[디버깅 정보]\n${lastDebugInfo}`);
-            } else {
-                alert(`현재 인식된 금액: ${document.getElementById('balanceDisplay').innerText}`);
+                if (!isAutoUpdate) itemListElement.innerHTML = `<div class="error-msg">API 호출 실패</div>`;
+            } finally {
+                setTimeout(() => syncDot.classList.remove('sync-active'), 500);
             }
         }
 
         function renderItems(data) {
             itemListElement.innerHTML = '';
-            
             let tempTotal = 0;
 
             data.forEach(item => {
@@ -410,6 +411,7 @@
             selectedItemsTotal = tempTotal;
         }
 
+        // [복구] 일반 구매 기능
         function purchase() {
             if (selectedItemsTotal === 0) {
                 alert("장바구니가 텅 비었어요! 아이템을 골라주세요.");
@@ -424,6 +426,21 @@
             }
         }
 
+        function closeModal() {
+            // 모달 삭제로 인해 빈 함수 유지 또는 삭제 가능 (안정성을 위해 남겨둠)
+            const modal = document.getElementById('aiModal');
+            if(modal) modal.style.display = 'none';
+        }
+
+        window.showDebugInfo = function() {
+            if (document.getElementById('balanceDisplay').innerText === '₩0') {
+                alert(`[디버깅 정보]\n${lastDebugInfo}`);
+            } else {
+                alert(`현재 인식된 금액: ${document.getElementById('balanceDisplay').innerText}`);
+            }
+        }
+
+        // 1. 최초 실행
         fetchItems();
 
     </script>
