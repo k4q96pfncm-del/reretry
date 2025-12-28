@@ -173,6 +173,7 @@
         .error-msg {
             grid-column: 1 / -1; color: red; text-align: center; font-size: 11px;
             padding: 10px; background: #ffe6e6; border: 1px solid red; border-radius: 4px;
+            word-break: break-all;
         }
     </style>
 </head>
@@ -226,8 +227,21 @@
                     renderItems(data.results);
                 } else if (data.results && data.results.length === 0) {
                     itemListElement.innerHTML = `<div class="loading">아이템이 없습니다.<br>(노션 표가 비어있음)</div>`;
+                } else if (data.object === 'error') {
+                    // [에러 원인 상세 출력]
+                    // 노션이 보낸 진짜 에러 메시지를 보여줍니다.
+                    itemListElement.innerHTML = `
+                        <div class="error-msg">
+                            <strong>노션 연결 거부 (${data.status})</strong><br>
+                            ${data.message}<br><br>
+                            <span style="color:#666">
+                            [힌트]<br>
+                            401: Vercel 환경변수 키 확인<br>
+                            404: DB ID 확인 또는 초대 안됨
+                            </span>
+                        </div>`;
                 } else {
-                    itemListElement.innerHTML = `<div class="error-msg">데이터 로딩 실패</div>`;
+                    itemListElement.innerHTML = `<div class="error-msg">알 수 없는 데이터<br>${JSON.stringify(data)}</div>`;
                 }
 
             } catch (error) {
