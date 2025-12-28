@@ -8,7 +8,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Galmuri9&display=swap');
 
         :root {
-            /* 배경: 연한 파스텔 핑크 */
+            /* [수정] 배경: 흰색으로 변경 */
             --bg-color: #ffffff;
             /* 창 배경: 아주 연한 회색/흰색 */
             --window-bg: #fdfdfd;
@@ -29,8 +29,7 @@
 
         body {
             background-color: var(--bg-color);
-            background-image: radial-gradient(#ffcdd2 1px, transparent 1px);
-            background-size: 20px 20px;
+            /* [수정] 도트 패턴 제거 (background-image, background-size 삭제) */
             font-family: 'Galmuri9', 'Courier New', monospace;
             display: flex;
             justify-content: center;
@@ -81,7 +80,6 @@
             width: 16px;
             height: 16px;
             border: 1px solid #aaa;
-            /* [수정] 원형(50%) -> 라운드 스퀘어(4px) 변경 */
             border-radius: 4px; 
             display: flex;
             justify-content: center;
@@ -234,7 +232,7 @@
         <div class="control-panel">
             <div class="total-section">
                 <!-- [수정] TOTAL -> 남은 돈 -->
-                <span class="total-label">GOLD:</span>
+                <span class="total-label">남은 돈:</span>
                 <span class="total-price" id="balanceDisplay">--</span>
             </div>
             <div class="btn-group">
@@ -255,7 +253,7 @@
         const COLUMN_PRICE = 'Price'; 
         const COLUMN_IMAGE = 'Image';
         // [추가] 내 데이터베이스의 "남은 돈" 속성 이름
-        const COLUMN_REMAINING = 'GOLD'
+        const COLUMN_REMAINING = '남은 돈'; 
         // ============================================================
 
         let selectedItemsTotal = 0; // 선택한 아이템들의 합계 (내부 계산용)
@@ -267,15 +265,36 @@
                 if (!response.ok) throw new Error(`서버 연결 실패 (${response.status})`);
                 const data = await response.json();
 
+                console.log("Notion Data:", data); // [디버깅] 콘솔창에서 데이터 확인용
+
                 if (data.results && data.results.length > 0) {
                     renderItems(data.results);
                     
-                    // [핵심 원리] 데이터 로드 직후 "남은 돈" 속성 값 가져오기
-                    // 데이터베이스의 첫 번째 아이템(혹은 아무 아이템)에 있는 '남은 돈' 값을 읽어옵니다.
+                    // [핵심 수정 구역] "남은 돈" 데이터 안전하게 가져오기
+                    // 첫 번째 아이템에서 값을 찾습니다.
                     const firstItem = data.results[0];
-                    const remainingMoney = firstItem.properties[COLUMN_REMAINING]?.number || 0;
+                    const remainingProp = firstItem.properties[COLUMN_REMAINING];
+
+                    let remainingMoney = 0;
+
+                    if (remainingProp) {
+                        // 1. 일반 숫자 속성일 때
+                        if (remainingProp.type === 'number') {
+                            remainingMoney = remainingProp.number || 0;
+                        } 
+                        // 2. 수식(Formula) 속성일 때
+                        else if (remainingProp.type === 'formula') {
+                            remainingMoney = remainingProp.formula.number || 0;
+                        }
+                        // 3. 롤업(Rollup) 속성일 때
+                        else if (remainingProp.type === 'rollup') {
+                            remainingMoney = remainingProp.rollup.number || 0;
+                        }
+                    } else {
+                        console.warn(`'${COLUMN_REMAINING}' 속성을 찾을 수 없습니다. 이름이 정확한지 확인해주세요.`);
+                    }
                     
-                    // 화면에 "남은 돈" 표시 (고정값)
+                    // 화면에 "남은 돈" 표시
                     balanceDisplayElement.innerText = `₩${remainingMoney.toLocaleString()}`;
 
                 } else if (data.results && data.results.length === 0) {
@@ -325,9 +344,7 @@
                     if (isSelected) selectedItemsTotal += price;
                     else selectedItemsTotal -= price;
 
-                    // [중요] 여기서는 "남은 돈" 텍스트를 업데이트하지 않습니다.
-                    // 사용자가 요청한 대로 DB에서 가져온 값만 표시되도록 유지합니다.
-                    // 필요하다면 나중에 "구매 시 차감" 로직을 추가할 수 있습니다.
+                    // "남은 돈"은 변경되지 않고 그대로 유지
                 });
 
                 itemListElement.appendChild(div);
