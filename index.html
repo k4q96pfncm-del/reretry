@@ -8,19 +8,13 @@
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Galmuri9&display=swap');
 
         :root {
-            /* [수정] 배경: 흰색으로 변경 */
             --bg-color: #ffffff;
-            /* 창 배경: 아주 연한 회색/흰색 */
             --window-bg: #fdfdfd;
-            /* 하이라이트: 흰색 */
             --highlight: #ffffff;
-            /* 그림자: 진한 검정 대신 연한 보라빛 회색 사용 */
             --shadow: #b0b0c0;
             --dark-shadow: #8a8a9b;
-            /* 타이틀바 그라데이션: 파스텔 블루 -> 핑크 */
             --title-start: #a1c4fd;
             --title-end: #c2e9fb;
-            /* 포인트 컬러 (선택 시) */
             --accent-color: #ffb7b2; 
             
             --radius-outer: 12px;
@@ -29,7 +23,6 @@
 
         body {
             background-color: var(--bg-color);
-            /* [수정] 도트 패턴 제거 (background-image, background-size 삭제) */
             font-family: 'Galmuri9', 'Courier New', monospace;
             display: flex;
             justify-content: center;
@@ -179,8 +172,15 @@
             box-shadow: inset 1px 1px 3px rgba(0,0,0,0.05);
         }
 
-        /* 라벨 텍스트 색상 변경 */
-        .total-label { font-size: 11px; color: #556677; font-weight: bold; cursor: help; }
+        /* [수정] 자동 동기화 표시 (애니메이션) */
+        .sync-indicator {
+            width: 8px; height: 8px; border-radius: 50%;
+            background-color: #aaa; margin-left: 6px;
+            transition: background-color 0.3s;
+        }
+        .sync-active { background-color: #4caf50; box-shadow: 0 0 5px #4caf50; }
+
+        .total-label { font-size: 11px; color: #556677; font-weight: bold; cursor: help; display: flex; align-items: center; }
         .total-price { font-size: 14px; font-weight: bold; color: #e91e63; margin-left: 4px; }
 
         .btn-group { display: flex; gap: 6px; }
@@ -196,7 +196,6 @@
             transition: all 0.1s;
         }
 
-        /* [수정] 초기화 버튼 스타일 삭제됨, 구매 버튼만 남음 */
         .btn-buy { background: #ffb7b2; color: white; font-weight: bold; width: 100%; }
 
         .action-btn:active {
@@ -217,7 +216,7 @@
             <div class="title-bar-text">♥ PASTEL_SHOP.exe</div>
             <div class="title-bar-controls">
                 <div class="btn-win">_</div>
-                <div class="btn-win">□</div> <!-- 버튼 모양 텍스트도 살짝 변경 -->
+                <div class="btn-win">□</div>
                 <div class="btn-win">x</div>
             </div>
         </div>
@@ -231,12 +230,14 @@
         
         <div class="control-panel">
             <div class="total-section">
-                <!-- [수정] 라벨을 GOLD로 변경 -->
-                <span class="total-label" onclick="showDebugInfo()">GOLD:</span>
+                <!-- 자동 동기화 상태 표시등 추가 -->
+                <span class="total-label" onclick="showDebugInfo()">
+                    GOLD
+                    <div class="sync-indicator" id="syncDot" title="자동 동기화 중"></div>:
+                </span>
                 <span class="total-price" id="balanceDisplay">--</span>
             </div>
             <div class="btn-group">
-                <!-- [수정] 초기화 버튼 삭제 -->
                 <button class="action-btn btn-buy" onclick="purchase()">구매하기</button>
             </div>
         </div>
@@ -245,44 +246,38 @@
     <script>
         const itemListElement = document.getElementById('itemList');
         const balanceDisplayElement = document.getElementById('balanceDisplay');
+        const syncDot = document.getElementById('syncDot');
 
         // ============================================================
-        // [설정 구역] 노션 데이터베이스 속성 이름
+        // [설정 구역]
         // ============================================================
         const COLUMN_NAME = 'item';   
         const COLUMN_PRICE = 'Price'; 
         const COLUMN_IMAGE = 'Image';
-        // [추가] 속성 이름 변경: 남은 돈 -> GOLD
         const COLUMN_REMAINING = 'GOLD'; 
+        
+        // [설정] 자동 업데이트 주기 (밀리초 단위, 2000 = 2초)
+        const UPDATE_INTERVAL = 2000; 
         // ============================================================
 
         let selectedItemsTotal = 0;
-        let lastDebugInfo = "데이터 로딩 전"; // 디버깅용 메시지 저장 변수
+        let selectedItemNames = new Set(); // 선택된 아이템의 이름을 기억하는 저장소
+        let lastDebugInfo = "데이터 로딩 전";
 
-        // [New] 강력한 숫자 추출 함수
         function getSafeNumber(prop) {
             if (!prop) return 0;
-            
-            // 1. 일반 숫자 (Number)
             if (prop.type === 'number') return prop.number || 0;
-            
-            // 2. 수식 (Formula)
             if (prop.type === 'formula') {
                 if (prop.formula.type === 'number') return prop.formula.number || 0;
                 if (prop.formula.type === 'string') return parseFloat(prop.formula.string) || 0;
             }
-            
-            // 3. 롤업 (Rollup) - 중요!
             if (prop.type === 'rollup') {
                 if (prop.rollup.type === 'number') return prop.rollup.number || 0;
-                // 롤업이 배열(Array) 형태로 오는 경우 처리
                 if (prop.rollup.type === 'array') {
-                    // 배열 안에 있는 값들을 확인해서 숫자를 찾아냄
                     const validItem = prop.rollup.array.find(item => 
                         (item.type === 'number' && item.number > 0) || 
                         (item.type === 'formula' && item.formula.number > 0)
                     );
-                    
                     if (validItem) {
                          if (validItem.type === 'number') return validItem.number;
                          if (validItem.type === 'formula') return validItem.formula.number;
@@ -293,19 +288,21 @@
             return 0;
         }
 
-        async function fetchItems() {
+        async function fetchItems(isAutoUpdate = false) {
             try {
-                const response = await fetch('api/notion'); 
+                // 자동 업데이트 중일 때는 초록색 불 켜기
+                if (isAutoUpdate) syncDot.classList.add('sync-active');
+
+                const timestamp = new Date().getTime();
+                const response = await fetch(`api/notion?t=${timestamp}`); 
                 
                 if (!response.ok) throw new Error(`서버 연결 실패 (${response.status})`);
                 const data = await response.json();
 
-                console.log("Notion Data:", data);
-
                 if (data.results && data.results.length > 0) {
                     renderItems(data.results);
                     
-                    // [강력해진 로직] 모든 아이템을 뒤져서 'GOLD'가 있는 행을 찾습니다.
+                    // GOLD 찾기 로직
                     let foundMoney = 0;
                     let debugStatus = "값을 찾지 못함";
 
@@ -318,18 +315,17 @@
                             if (val > 0) {
                                 foundMoney = val;
                                 debugStatus = `성공! ${i+1}번째 아이템에서 값 ${val} 발견`;
-                                break; // 값을 찾았으면 반복문 종료
+                                break;
                             }
                         }
                     }
 
-                    // 찾은 값이 0이어도 속성 자체가 존재하는지 확인해 디버그 메시지 생성
                     if (foundMoney === 0) {
                         const firstItemProps = data.results[0].properties;
                         if (!firstItemProps[COLUMN_REMAINING]) {
-                            debugStatus = `실패: '${COLUMN_REMAINING}' 속성을 찾을 수 없음. (속성 목록: ${Object.keys(firstItemProps).join(', ')})`;
+                            debugStatus = `실패: '${COLUMN_REMAINING}' 속성 없음`;
                         } else {
-                            debugStatus = `실패: 속성은 있으나 값이 0이거나 비어있음. (타입: ${firstItemProps[COLUMN_REMAINING].type})`;
+                            debugStatus = `실패: 값이 0이거나 비어있음`;
                         }
                     }
                     
@@ -337,33 +333,37 @@
                     balanceDisplayElement.innerText = `₩${foundMoney.toLocaleString()}`;
 
                 } else if (data.results && data.results.length === 0) {
-                    itemListElement.innerHTML = `<div class="loading">아이템이 없습니다.<br>(텅 비었어요!)</div>`;
-                } else if (data.object === 'error') {
-                    itemListElement.innerHTML = `
-                        <div class="error-msg">
-                            <strong>연결 오류 ☁</strong><br>
-                            ${data.message}
-                        </div>`;
-                } else {
-                    itemListElement.innerHTML = `<div class="error-msg">데이터 오류</div>`;
+                    if (!isAutoUpdate) itemListElement.innerHTML = `<div class="loading">아이템이 없습니다.</div>`;
                 }
 
             } catch (error) {
                 console.error(error);
-                itemListElement.innerHTML = `<div class="error-msg">API 호출 실패<br>Vercel 환경인지 확인해주세요.</div>`;
+                if (!isAutoUpdate) itemListElement.innerHTML = `<div class="error-msg">API 호출 실패</div>`;
+            } finally {
+                // 업데이트 끝나면 불 끄기
+                setTimeout(() => syncDot.classList.remove('sync-active'), 500);
             }
         }
 
-        // 디버깅용 팝업 함수
         window.showDebugInfo = function() {
             if (document.getElementById('balanceDisplay').innerText === '₩0') {
-                alert(`[디버깅 정보]\n${lastDebugInfo}\n\n팁: 노션의 '${COLUMN_REMAINING}' 속성 이름에 띄어쓰기가 있는지 확인해보세요!`);
+                alert(`[디버깅 정보]\n${lastDebugInfo}`);
             }
         }
 
         function renderItems(data) {
+            // [원리] 기존에 선택된 아이템 목록을 백업해둡니다. (Set은 중복없는 목록)
+            // 현재 화면에 있는 'selected' 클래스 가진 아이템들의 이름을 저장
+            // (fetchItems가 잦아서 중간에 선택이 풀리는 것을 방지하기 위함이지만,
+            //  더 확실하게 하기 위해 전역 변수 selectedItemNames를 사용합니다.)
+            
+            // 화면 초기화
             itemListElement.innerHTML = '';
             
+            // 다시 렌더링 할 때 전역 변수 selectedItemsTotal를 0으로 초기화하고 재계산
+            // (가격 변동이 있을 수 있으므로)
+            let tempTotal = 0;
+
             data.forEach(item => {
                 const name = item.properties[COLUMN_NAME]?.title[0]?.plain_text || "이름 없음";
                 const price = item.properties[COLUMN_PRICE]?.number || 0;
@@ -382,16 +382,33 @@
                     <span class="item-price">₩${price.toLocaleString()}</span>
                 `;
 
+                // [원리] 기억해둔 이름 목록에 이 아이템이 있다면, 다시 선택 상태로 만듦
+                if (selectedItemNames.has(name)) {
+                    div.classList.add('selected');
+                    tempTotal += price;
+                }
+
                 div.addEventListener('click', () => {
                     div.classList.toggle('selected');
                     const isSelected = div.classList.contains('selected');
 
-                    if (isSelected) selectedItemsTotal += price;
-                    else selectedItemsTotal -= price;
+                    if (isSelected) {
+                        selectedItemNames.add(name); // 이름 기억
+                        selectedItemsTotal += price;
+                    } else {
+                        selectedItemNames.delete(name); // 이름 망각
+                        selectedItemsTotal -= price;
+                    }
+                    
+                    // 재계산 로직이 꼬일 수 있으므로, 확실하게 다시 계산
+                    // (여기서는 간단히 처리)
                 });
 
                 itemListElement.appendChild(div);
             });
+
+            // 가격 재동기화
+            selectedItemsTotal = tempTotal;
         }
 
         function purchase() {
@@ -402,11 +419,20 @@
                 
                 const allItems = document.querySelectorAll('.shop-item');
                 allItems.forEach(item => item.classList.remove('selected'));
+                
                 selectedItemsTotal = 0;
+                selectedItemNames.clear(); // 기억소 초기화
             }
         }
 
+        // 1. 최초 실행
         fetchItems();
+
+        // 2. [핵심] 2초마다 자동으로 실행 (Polling)
+        setInterval(() => {
+            fetchItems(true); // true는 자동 업데이트라는 표시
+        }, UPDATE_INTERVAL);
+
     </script>
 </body>
 </html>
