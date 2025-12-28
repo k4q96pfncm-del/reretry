@@ -180,7 +180,7 @@
         }
 
         /* 라벨 텍스트 색상 변경 */
-        .total-label { font-size: 11px; color: #556677; font-weight: bold; }
+        .total-label { font-size: 11px; color: #556677; font-weight: bold; cursor: help; }
         .total-price { font-size: 14px; font-weight: bold; color: #e91e63; margin-left: 4px; }
 
         .btn-group { display: flex; gap: 6px; }
@@ -214,7 +214,7 @@
 
     <div class="window">
         <div class="title-bar">
-            <div class="title-bar-text">♥ WISHLIST_SHOP.exe</div>
+            <div class="title-bar-text">♥ PASTEL_SHOP.exe</div>
             <div class="title-bar-controls">
                 <div class="btn-win">_</div>
                 <div class="btn-win">□</div> <!-- 버튼 모양 텍스트도 살짝 변경 -->
@@ -231,8 +231,8 @@
         
         <div class="control-panel">
             <div class="total-section">
-                <!-- [수정] TOTAL -> 남은 돈 -->
-                <span class="total-label">GOLD:</span>
+                <!-- [수정] 라벨을 GOLD로 변경 -->
+                <span class="total-label" onclick="showDebugInfo()">GOLD:</span>
                 <span class="total-price" id="balanceDisplay">--</span>
             </div>
             <div class="btn-group">
@@ -252,11 +252,46 @@
         const COLUMN_NAME = 'item';   
         const COLUMN_PRICE = 'Price'; 
         const COLUMN_IMAGE = 'Image';
-        // [추가] 내 데이터베이스의 "남은 돈" 속성 이름
+        // [추가] 속성 이름 변경: 남은 돈 -> GOLD
         const COLUMN_REMAINING = 'GOLD'; 
         // ============================================================
 
-        let selectedItemsTotal = 0; // 선택한 아이템들의 합계 (내부 계산용)
+        let selectedItemsTotal = 0;
+        let lastDebugInfo = "데이터 로딩 전"; // 디버깅용 메시지 저장 변수
+
+        // [New] 강력한 숫자 추출 함수
+        function getSafeNumber(prop) {
+            if (!prop) return 0;
+            
+            // 1. 일반 숫자 (Number)
+            if (prop.type === 'number') return prop.number || 0;
+            
+            // 2. 수식 (Formula)
+            if (prop.type === 'formula') {
+                if (prop.formula.type === 'number') return prop.formula.number || 0;
+                if (prop.formula.type === 'string') return parseFloat(prop.formula.string) || 0;
+            }
+            
+            // 3. 롤업 (Rollup) - 중요!
+            if (prop.type === 'rollup') {
+                if (prop.rollup.type === 'number') return prop.rollup.number || 0;
+                // 롤업이 배열(Array) 형태로 오는 경우 처리
+                if (prop.rollup.type === 'array') {
+                    // 배열 안에 있는 값들을 확인해서 숫자를 찾아냄
+                    const validItem = prop.rollup.array.find(item => 
+                        (item.type === 'number' && item.number > 0) || 
+                        (item.type === 'formula' && item.formula.number > 0)
+                    );
+                    
+                    if (validItem) {
+                         if (validItem.type === 'number') return validItem.number;
+                         if (validItem.type === 'formula') return validItem.formula.number;
+                    }
+                    return 0;
+                }
+            }
+            return 0;
+        }
 
         async function fetchItems() {
             try {
@@ -265,37 +300,41 @@
                 if (!response.ok) throw new Error(`서버 연결 실패 (${response.status})`);
                 const data = await response.json();
 
-                console.log("Notion Data:", data); // [디버깅] 콘솔창에서 데이터 확인용
+                console.log("Notion Data:", data);
 
                 if (data.results && data.results.length > 0) {
                     renderItems(data.results);
                     
-                    // [핵심 수정 구역] "남은 돈" 데이터 안전하게 가져오기
-                    // 첫 번째 아이템에서 값을 찾습니다.
-                    const firstItem = data.results[0];
-                    const remainingProp = firstItem.properties[COLUMN_REMAINING];
+                    // [강력해진 로직] 모든 아이템을 뒤져서 'GOLD'가 있는 행을 찾습니다.
+                    let foundMoney = 0;
+                    let debugStatus = "값을 찾지 못함";
 
-                    let remainingMoney = 0;
+                    for (let i = 0; i < data.results.length; i++) {
+                        const item = data.results[i];
+                        const remainingProp = item.properties[COLUMN_REMAINING];
+                        
+                        if (remainingProp) {
+                            const val = getSafeNumber(remainingProp);
+                            if (val > 0) {
+                                foundMoney = val;
+                                debugStatus = `성공! ${i+1}번째 아이템에서 값 ${val} 발견`;
+                                break; // 값을 찾았으면 반복문 종료
+                            }
+                        }
+                    }
 
-                    if (remainingProp) {
-                        // 1. 일반 숫자 속성일 때
-                        if (remainingProp.type === 'number') {
-                            remainingMoney = remainingProp.number || 0;
-                        } 
-                        // 2. 수식(Formula) 속성일 때
-                        else if (remainingProp.type === 'formula') {
-                            remainingMoney = remainingProp.formula.number || 0;
+                    // 찾은 값이 0이어도 속성 자체가 존재하는지 확인해 디버그 메시지 생성
+                    if (foundMoney === 0) {
+                        const firstItemProps = data.results[0].properties;
+                        if (!firstItemProps[COLUMN_REMAINING]) {
+                            debugStatus = `실패: '${COLUMN_REMAINING}' 속성을 찾을 수 없음. (속성 목록: ${Object.keys(firstItemProps).join(', ')})`;
+                        } else {
+                            debugStatus = `실패: 속성은 있으나 값이 0이거나 비어있음. (타입: ${firstItemProps[COLUMN_REMAINING].type})`;
                         }
-                        // 3. 롤업(Rollup) 속성일 때
-                        else if (remainingProp.type === 'rollup') {
-                            remainingMoney = remainingProp.rollup.number || 0;
-                        }
-                    } else {
-                        console.warn(`'${COLUMN_REMAINING}' 속성을 찾을 수 없습니다. 이름이 정확한지 확인해주세요.`);
                     }
                     
-                    // 화면에 "남은 돈" 표시
-                    balanceDisplayElement.innerText = `₩${remainingMoney.toLocaleString()}`;
+                    lastDebugInfo = debugStatus;
+                    balanceDisplayElement.innerText = `₩${foundMoney.toLocaleString()}`;
 
                 } else if (data.results && data.results.length === 0) {
                     itemListElement.innerHTML = `<div class="loading">아이템이 없습니다.<br>(텅 비었어요!)</div>`;
@@ -312,6 +351,13 @@
             } catch (error) {
                 console.error(error);
                 itemListElement.innerHTML = `<div class="error-msg">API 호출 실패<br>Vercel 환경인지 확인해주세요.</div>`;
+            }
+        }
+
+        // 디버깅용 팝업 함수
+        window.showDebugInfo = function() {
+            if (document.getElementById('balanceDisplay').innerText === '₩0') {
+                alert(`[디버깅 정보]\n${lastDebugInfo}\n\n팁: 노션의 '${COLUMN_REMAINING}' 속성 이름에 띄어쓰기가 있는지 확인해보세요!`);
             }
         }
 
@@ -336,15 +382,12 @@
                     <span class="item-price">₩${price.toLocaleString()}</span>
                 `;
 
-                // 클릭 이벤트
                 div.addEventListener('click', () => {
                     div.classList.toggle('selected');
                     const isSelected = div.classList.contains('selected');
 
                     if (isSelected) selectedItemsTotal += price;
                     else selectedItemsTotal -= price;
-
-                    // "남은 돈"은 변경되지 않고 그대로 유지
                 });
 
                 itemListElement.appendChild(div);
@@ -355,10 +398,8 @@
             if (selectedItemsTotal === 0) {
                 alert("장바구니가 텅 비었어요! 아이템을 골라주세요.");
             } else {
-                // 현재는 구매 버튼을 누르면 선택한 금액만 알려줍니다.
                 alert(`선택하신 상품의 총 금액은 ${selectedItemsTotal.toLocaleString()}원 입니다.\n구매를 진행하시겠습니까?`);
                 
-                // 구매 후 초기화 (UI 선택 해제)
                 const allItems = document.querySelectorAll('.shop-item');
                 allItems.forEach(item => item.classList.remove('selected'));
                 selectedItemsTotal = 0;
