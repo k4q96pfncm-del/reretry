@@ -135,12 +135,14 @@
             background-color: #f8f8f8;
             border-radius: 6px;
             margin-bottom: 6px;
-            object-fit: contain;
-            object-position: center;
-
             border: 1px solid #eee;
         
-            display: block;       
+            display: flex; 
+            justify-content: center;  
+            align-items: center;   
+            
+            object-fit: cover;
+            object-position: center;
             color: transparent;   
             font-size: 0;         
             overflow: hidden;    
@@ -255,15 +257,12 @@
         let selectedItemNames = new Set();
         let lastDebugInfo = "데이터 로딩 전";
 
-        // [New] 더 강력해진 숫자 탐정 함수 (텍스트로 된 숫자도 변환)
         function getSafeNumber(prop) {
             if (!prop) return 0;
             
-            // [원리] 어떤 값이 들어오든 숫자만 쏙 뽑아내는 내부 함수
             const extractNum = (val) => {
                 if (typeof val === 'number') return val;
                 if (!val) return 0;
-                // 문자열인 경우: 쉼표, 특수문자 제거하고 숫자만 파싱 ("40,000" -> 40000)
                 const str = String(val).replace(/[^0-9.-]/g, '');
                 return parseFloat(str) || 0;
             };
@@ -277,7 +276,7 @@
                 if (prop.formula.type === 'string') return extractNum(prop.formula.string);
             }
             
-            // 3. 롤업 (문제의 구간!)
+            // 3. 롤업
             if (prop.type === 'rollup') {
                 if (prop.rollup.type === 'number') return extractNum(prop.rollup.number);
                 
@@ -317,7 +316,7 @@
                     let debugStatus = "값을 찾지 못함 (전체 0원)";
                     let debugDetail = "";
 
-                    // 모든 아이템을 뒤져서 GOLD 찾기
+                    
                     for (let i = 0; i < data.results.length; i++) {
                         const item = data.results[i];
                         const remainingProp = item.properties[COLUMN_REMAINING];
@@ -348,8 +347,7 @@
                          lastDebugInfo = debugStatus;
                     }
                     
-                    // [원리] toLocaleString() 함수가 자동으로 3자리마다 쉼표를 찍어줍니다.
-                    // 예: 40000 -> "40,000"
+                    
                     balanceDisplayElement.innerText = `₩${foundMoney.toLocaleString()}`;
 
                 } else if (data.results && data.results.length === 0) {
@@ -387,7 +385,7 @@
 
                 const div = document.createElement('div');
                 div.className = 'shop-item';
-               // onerror 부분에 'this.onerror=null;' 을 추가했습니다.
+               
 div.innerHTML = `
     <img src="${imageUrl}" class="item-image" alt="${name}" onerror="this.onerror=null; this.src='https://via.placeholder.com/50/eee/aaa?text=x'">
     <span class="item-name">${name}</span>
@@ -418,14 +416,16 @@ div.innerHTML = `
         }
 
         function purchase() {
-            if (selectedItemsTotal === 0) {
-                alert(`선택하신 상품의 총 금액은 ${selectedItemsTotal.toLocaleString()}원 입니다.\n구매를 진행하시겠습니까?`);
-                
-                const allItems = document.querySelectorAll('.shop-item');
-                allItems.forEach(item => item.classList.remove('selected'));
-                
-                selectedItemsTotal = 0;
-                selectedItemNames.clear();
+            if (selectedItemsTotal > 0) {
+                if (confirm(`총 ${selectedItemsTotal.toLocaleString()}원을 구매하시겠습니까?`)) {
+                    alert("구매가 완료되었습니다! (가상)");
+                    const allItems = document.querySelectorAll('.shop-item');
+                    allItems.forEach(item => item.classList.remove('selected'));
+                    selectedItemsTotal = 0;
+                    selectedItemNames.clear();
+                }
+            } else {
+                alert("구매할 아이템을 먼저 선택해주세요.");
             }
         }
 
