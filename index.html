@@ -140,6 +140,7 @@
         }
 
         .item-name {
+            font-family: 'Galmuri9', sans-serif;
             font-size: 11px;
             margin-bottom: 4px;
             text-align: center;
@@ -172,8 +173,8 @@
             box-shadow: inset 1px 1px 3px rgba(0,0,0,0.05);
         }
 
-        .total-label { font-size: 11px; color: #556677; font-weight: bold; cursor: help; }
-        .total-price { font-size: 14px; font-weight: bold; color: #e91e63; margin-left: 4px; }
+        .total-label { font-family: 'Galmuri9', sans-serif; font-size: 11px; color: #ffb7b2; font-weight: bold; cursor: help; }
+        .total-price { font-family: 'Courier New', monospace; font-size: 13px; font-weight: bold; color: #556677; margin-left: 4px; }
 
         .btn-group { display: flex; gap: 6px; }
 
@@ -222,7 +223,7 @@
         
         <div class="control-panel">
             <div class="total-section">
-                <span class="total-label" onclick="showDebugInfo()">GOLD:</span>
+                <span class="total-label" onclick="showDebugInfo()">남은 돈:</span>
                 <span class="total-price" id="balanceDisplay">--</span>
             </div>
             <div class="btn-group">
@@ -380,12 +381,12 @@
 
                 const div = document.createElement('div');
                 div.className = 'shop-item';
-                div.innerHTML = `
-                    <img src="${imageUrl}" class="item-image" alt="${name}" onerror="this.src='https://via.placeholder.com/50/eee/aaa?text=x'">
-                    <span class="item-name">${name}</span>
-                    <span class="item-price">₩${price.toLocaleString()}</span>
-                `;
-
+               // onerror 부분에 'this.onerror=null;' 을 추가했습니다.
+div.innerHTML = `
+    <img src="${imageUrl}" class="item-image" alt="${name}" onerror="this.onerror=null; this.src='https://via.placeholder.com/50/eee/aaa?text=x'">
+    <span class="item-name">${name}</span>
+    <span class="item-price">₩${price.toLocaleString()}</span>
+`;
                 if (selectedItemNames.has(name)) {
                     div.classList.add('selected');
                     tempTotal += price;
