@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pastel Item Shop</title>
     <style>
-        @import url('https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css');
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Galmuri9&display=swap');
 
         :root {
             --bg-color: #ffffff;
@@ -23,8 +23,7 @@
 
         body {
             background-color: var(--bg-color);
-            font-family: 'Galmuri9', 'Dotum', monospace; 
-            -webkit-font-smoothing: none;
+            font-family: 'Galmuri9', 'Courier New', monospace;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -33,21 +32,15 @@
             overflow: hidden;
         }
 
-        /* 2. 메인 윈도우 스타일 (테두리 없음, 깔끔함) */
         .window {
             background-color: var(--window-bg);
             width: 340px;
             padding: 6px;
             border-radius: var(--radius-outer);
-            
-            /* 메인 창은 핑크 테두리 제거 (입체감만 유지) */
-            /* border: 2px solid var(--accent-color); */ 
-
             box-shadow: inset -1px -1px var(--dark-shadow), 
                         inset 1px 1px var(--highlight), 
                         inset -2px -2px var(--shadow), 
                         inset 2px 2px #ffffff;
-            
             filter: drop-shadow(8px 8px 15px rgba(100, 100, 100, 0.15));
             display: flex;
             flex-direction: column;
@@ -84,18 +77,11 @@
         }
 
         .content-area {
-            background: #fffafa;
-            border-radius: var(--radius-inner);
-            border: 2px inset #eee;
-            box-shadow: inset 1px 1px 6px rgba(0,0,0,0.05);
-            height: 240px;
-            padding: 12px;
-            overflow-y: auto;
-            
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            align-content: start;
+            background: #fffafa; border-radius: var(--radius-inner);
+            border: 2px inset #eee; box-shadow: inset 1px 1px 6px rgba(0,0,0,0.05);
+            height: 240px; padding: 12px; overflow-y: auto;
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 12px; align-content: start;
         }
 
         ::-webkit-scrollbar { width: 8px; }
@@ -116,19 +102,10 @@
             border-color: var(--accent-color); box-shadow: inset 2px 2px 5px rgba(0,0,0,0.1);
         }
 
-        /* 3. 이미지 중앙 정렬 & 대체 이미지 스타일 */
         .item-image {
-            width: 50px;
-            height: 50px;
-            background-color: #eeeeee; /* 회색 배경 */
-            border-radius: 6px;
-            margin-bottom: 6px;
-            border: 1px solid #eee;
-            
-            /* 핵심: 이미지가 작아도, 깨져도 가운데로 */
-            object-fit: contain;  
-            object-position: center; 
-            display: block;
+            width: 50px; height: 50px; background-color: #f8f8f8;
+            border-radius: 6px; margin-bottom: 6px; object-fit: contain; /* cover -> contain 변경 (이미지 짤림 방지) */
+            object-position: center; border: 1px solid #eee; display: block;
         }
 
         .item-name {
@@ -136,7 +113,10 @@
             word-break: keep-all; line-height: 1.3; color: #555;
         }
         
-        .item-price { font-size: 10px; color: #888; font-family: 'Courier New', monospace; font-weight: bold; }
+        .item-price {
+            font-size: 10px; color: #888;
+            font-family: 'Courier New', monospace; font-weight: bold;
+        }
 
         .shop-item.selected .item-name { color: white; font-weight: bold; }
         .shop-item.selected .item-price { color: rgba(255,255,255,0.9); }
@@ -150,17 +130,8 @@
             border: 1px solid white; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.05);
         }
 
-        /* 4. 라벨 & 가격 색상 디자인 */
-        .total-label { 
-            font-size: 11px; color: #99aabb; /* 연한 회색하늘색 */
-            font-weight: bold; cursor: help; 
-        }
-
-        .total-price { 
-            font-family: 'Courier New', monospace; font-size: 14px; 
-            font-weight: bold; color: #f57e9e; /* 진한 코랄 핑크 */
-            margin-left: 4px; 
-        }
+        .total-label { font-size: 11px; color: #556677; font-weight: bold; cursor: help; }
+        .total-price { font-size: 14px; font-weight: bold; color: #fa4e96; margin-left: 4px; }
 
         .btn-group { display: flex; gap: 6px; }
 
@@ -173,7 +144,12 @@
         .btn-buy { background: #ffb7b2; color: white; font-weight: bold; width: 100%; }
         .action-btn:active { transform: translate(1px, 1px); box-shadow: none; }
         
-        /* 5. 팝업창(모달) 디자인 (여기는 핑크 테두리 적용!) */
+        .error-msg {
+            grid-column: 1 / -1; color: #e57373; text-align: center; font-size: 11px;
+            padding: 10px; background: #ffebee; border: 1px solid #ef9a9a; border-radius: 8px;
+        }
+
+        /* ▼▼▼  팝업창(모달) 스타일 ▼▼▼ */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.2);
@@ -205,25 +181,20 @@
         .modal-btns { display: flex; justify-content: center; gap: 8px; }
 
         .btn-modal {
-            padding: 8px 16px; font-family: 'Galmuri9', monospace;
+            padding: 6px 14px; font-family: 'Galmuri9'; /* 폰트 유지 */
             font-size: 11px; border: none; border-radius: 4px; cursor: pointer;
             box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
 
         .btn-yes { background: #ffb7b2; color: white; font-weight: bold; }
         .btn-no { background: #eee; color: #666; }
-
-        .error-msg {
-            grid-column: 1 / -1; color: #e57373; text-align: center; font-size: 11px;
-            padding: 10px; background: #ffebee; border: 1px solid #ef9a9a; border-radius: 8px;
-        }
     </style>
 </head>
 <body>
 
     <div class="window">
         <div class="title-bar">
-            <div class="title-bar-text">♥ PASTEL_SHOP.exe</div>
+            <div class="title-bar-text">♥ WISHLIST_SHOP.exe</div>
             <div class="title-bar-controls">
                 <div class="btn-win">_</div>
                 <div class="btn-win">□</div>
@@ -240,11 +211,11 @@
         
         <div class="control-panel">
             <div class="total-section">
-                <span class="total-label" onclick="showDebugInfo()">남은 돈</span>
+                <span class="total-label" onclick="showDebugInfo()">GOLD:</span>
                 <span class="total-price" id="balanceDisplay">--</span>
             </div>
             <div class="btn-group">
-                <button type="button" class="action-btn btn-buy" onclick="purchase()">구매하기</button>
+                <button class="action-btn btn-buy" onclick="purchase()">구매하기</button>
             </div>
         </div>
     </div>
@@ -261,31 +232,31 @@
             <div class="modal-btns" id="modalBtnGroup"></div>
         </div>
     </div>
-
     <script>
         const itemListElement = document.getElementById('itemList');
         const balanceDisplayElement = document.getElementById('balanceDisplay');
 
         // ============================================================
-        // [설정 구역] 노션 DB 헤더 이름과 똑같이 맞추세요!
+        // [설정 구역] 
         // ============================================================
         const COLUMN_NAME = 'item';   
         const COLUMN_PRICE = 'Price'; 
         const COLUMN_IMAGE = 'Image';
         const COLUMN_REMAINING = 'GOLD'; 
-
-        // [관계형 설정] 
-        const COLUMN_RELATION = '구매 후 관계형'; // 노션 속성 이름
-        // ▼ 여기에 아까 복사한 '산 아이템' 페이지의 ID를 넣으세요!
+        
+        // [New] 관계형 설정
+        const COLUMN_RELATION = '구매 후 관계형'; 
         const TARGET_PAGE_ID = '2d77ec71623f806f92b5f1c87e6043a4'; 
         // ============================================================
 
         let selectedItemsTotal = 0;
         let selectedItemNames = new Set();
-        let currentBalance = 0; // 현재 잔액 (전역 변수)
         let lastDebugInfo = "데이터 로딩 전";
+        
+        // [New] 현재 잔액을 저장할 전역 변수
+        let currentBalance = 0; 
 
-        // 숫자 추출 함수
+        // 숫자 추출 함수 (기존 로직 유지)
         function getSafeNumber(prop) {
             if (!prop) return 0;
             const extractNum = (val) => {
@@ -317,7 +288,6 @@
             return 0;
         }
 
-        // 데이터 가져오기 (실제 서버 통신)
         async function fetchItems() {
             try {
                 const timestamp = new Date().getTime();
@@ -330,19 +300,36 @@
                     renderItems(data.results);
                     
                     let foundMoney = 0;
+                    let debugStatus = "값을 찾지 못함 (전체 0원)";
+                    let debugDetail = "";
+
                     for (let i = 0; i < data.results.length; i++) {
                         const item = data.results[i];
                         const remainingProp = item.properties[COLUMN_REMAINING];
+                        
                         if (remainingProp) {
                             const val = getSafeNumber(remainingProp);
+                            if (i === 0) debugDetail = JSON.stringify(remainingProp, null, 2);
                             if (val > 0) {
                                 foundMoney = val;
+                                debugStatus = `성공! ${i+1}번째 아이템에서 발견`;
                                 break;
                             }
                         }
                     }
+
+                    if (foundMoney === 0) {
+                        const firstItemProps = data.results[0].properties;
+                        if (!firstItemProps[COLUMN_REMAINING]) {
+                            lastDebugInfo = `실패: '${COLUMN_REMAINING}' 속성 자체가 없음.\n(현재 있는 속성들: ${Object.keys(firstItemProps).join(', ')})`;
+                        } else {
+                            lastDebugInfo = `실패: 속성은 있으나 숫자 추출 실패.\n\n[노션 데이터 원본]:\n${debugDetail}`;
+                        }
+                    } else {
+                         lastDebugInfo = debugStatus;
+                    }
                     
-                    // 잔액 저장 및 표시
+                    // [New] 찾은 돈을 전역 변수에 저장
                     currentBalance = foundMoney;
                     balanceDisplayElement.innerText = `₩${foundMoney.toLocaleString()}`;
 
@@ -356,7 +343,14 @@
             }
         }
 
-        // 아이템 그리기
+        window.showDebugInfo = function() {
+            if (document.getElementById('balanceDisplay').innerText === '₩0') {
+                alert(`[디버깅 정보]\n${lastDebugInfo}`);
+            } else {
+                alert(`현재 인식된 금액: ${document.getElementById('balanceDisplay').innerText}`);
+            }
+        }
+
         function renderItems(data) {
             itemListElement.innerHTML = '';
             let tempTotal = 0;
@@ -364,7 +358,7 @@
             data.forEach(item => {
                 const name = item.properties[COLUMN_NAME]?.title[0]?.plain_text || "이름 없음";
                 const price = item.properties[COLUMN_PRICE]?.number || 0;
-                const pageId = item.id; // 노션 페이지 ID
+                const pageId = item.id; // [New] 노션 페이지 ID
                 
                 let imageUrl = "https://via.placeholder.com/50/ffebee/e57373?text=♥";
                 const imageProp = item.properties[COLUMN_IMAGE];
@@ -374,12 +368,11 @@
 
                 const div = document.createElement('div');
                 div.className = 'shop-item';
-                div.dataset.id = pageId; // ID 숨겨두기
+                // [New] 중요: 아이템에 ID 심기
+                div.dataset.id = pageId; 
 
-                // 이미지 에러 처리 포함 (회색 박스 중앙 정렬)
                 div.innerHTML = `
-                    <img src="${imageUrl}" class="item-image" alt="${name}" 
-                         onerror="this.onerror=null; this.src='https://via.placeholder.com/50/eeeeee/aaaaaa?text=x';">
+                    <img src="${imageUrl}" class="item-image" alt="${name}" onerror="this.onerror=null; this.src='https://via.placeholder.com/50/eee/aaa?text=x'">
                     <span class="item-name">${name}</span>
                     <span class="item-price">₩${price.toLocaleString()}</span>
                 `;
@@ -407,7 +400,9 @@
             selectedItemsTotal = tempTotal;
         }
 
-        // 팝업 제어 함수들
+        // ============================================================
+        // [New] 팝업창 제어 함수들
+        // ============================================================
         const modal = document.getElementById('customModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalMessage = document.getElementById('modalMessage');
@@ -419,7 +414,6 @@
             modalBtnGroup.innerHTML = ''; 
 
             if (onConfirm) {
-                // 질문 모드 (버튼 2개)
                 const btnYes = document.createElement('button');
                 btnYes.className = 'btn-modal btn-yes';
                 btnYes.innerText = '네, 살래요!';
@@ -433,7 +427,6 @@
                 modalBtnGroup.appendChild(btnYes);
                 modalBtnGroup.appendChild(btnNo);
             } else {
-                // 알림 모드 (버튼 1개)
                 const btnOk = document.createElement('button');
                 btnOk.className = 'btn-modal btn-yes';
                 btnOk.innerText = '확 인';
@@ -447,25 +440,28 @@
             modal.classList.remove('active');
         }
 
-        // 구매 로직
+        // ============================================================
+        // [New] 완전히 새로워진 구매 로직
+        // ============================================================
         async function purchase() {
+            // 1. 장바구니 체크
             if (selectedItemsTotal === 0) {
-                showModal("♥ 알 림", "장바구니가 텅 비었어요!\n아이템을 먼저 골라주세요.");
+                showModal("♥ 알 림", "아이템을 선택해주세요.");
                 return;
             }
 
-            // 1. 잔액 부족 체크
+            // 2. 잔액 부족 체크
             if (selectedItemsTotal > currentBalance) {
                 const shortMoney = selectedItemsTotal - currentBalance;
-                showModal("! 잔액 부족 !", `잔액이 부족해요 ㅠㅠ\n(부족한 금액: -₩${shortMoney.toLocaleString()})`);
+                showModal("! 잔액 부족 !", `잔액이 부족합니다.`);
                 return;
             }
 
-            // 2. 이름 정리
+            // 3. 이름 정리
             const names = Array.from(selectedItemNames);
             const displayName = names.length > 1 ? `${names[0]} 외 ${names.length - 1}건` : names[0];
 
-            // 3. 팝업 띄우기 (타이틀: CHECKOUT 적용)
+            // 4. 구매 확인 및 서버 전송
             showModal("♥ CHECKOUT", `${displayName}을(를)\n구매하시겠습니까?`, async () => {
                 
                 const selectedIds = [];
@@ -474,7 +470,6 @@
                 });
 
                 try {
-                    // 서버로 관계형 연결 요청 보냄
                     const updateBody = {
                         pageIds: selectedIds,
                         properties: {
@@ -489,18 +484,15 @@
                     });
 
                     if (response.ok) {
-                        showModal("♥ 성 공 !", "구매가 완료되었습니다!\n구매 내역에 추가했어요.");
+                        showModal("♥ 성 공 !", "구매가 완료되었습니다!");
                         
-                        // 초기화
+                        // 화면 초기화
                         const allItems = document.querySelectorAll('.shop-item');
                         allItems.forEach(item => item.classList.remove('selected'));
                         selectedItemsTotal = 0;
                         selectedItemNames.clear();
-                        
-                        // (선택사항) 데이터 갱신을 원하면 아래 주석 해제
-                        // fetchItems(); 
                     } else {
-                        showModal("! 오 류 !", "서버 연결에 실패했어요.");
+                        showModal("! 오 류 !", "서버 연결에 실패했어요.\n(봇 초대 확인 필요)");
                     }
 
                 } catch (error) {
@@ -508,11 +500,6 @@
                     showModal("! 오 류 !", "네트워크 오류가 발생했어요.");
                 }
             });
-        }
-        
-        // 디버그용 창 (금액 클릭 시)
-        window.showDebugInfo = function() {
-            alert(`현재 인식된 금액: ${balanceDisplayElement.innerText}\n(전역 변수: ${currentBalance})`);
         }
 
         fetchItems();
