@@ -6,7 +6,6 @@
     <title>Pastel Item Shop</title>
     <style>
         @import url('https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css');
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
         :root {
             --bg-color: #ffffff;
@@ -483,7 +482,7 @@
                         }
                     };
 
-                    const response = await fetch('/api/purchase', { 
+                    const response = await fetch('/api/reretry', { 
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(updateBody), 
