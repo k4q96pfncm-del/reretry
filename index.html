@@ -235,7 +235,7 @@
                 <span class="total-price" id="balanceDisplay">--</span>
             </div>
             <div class="btn-group">
-                <button class="action-btn btn-buy" onclick="purchase()">구매하기</button>
+                <button type="button" class="action-btn btn-buy" onclick="purchase()">구매하기</button>
             </div>
         </div>
     </div>
@@ -251,11 +251,15 @@
         const COLUMN_PRICE = 'Price'; 
         const COLUMN_IMAGE = 'Image';
         const COLUMN_REMAINING = 'GOLD'; 
+        const COLUMN_RELATION = '구매 후 관계형'
+        const TARGET_PAGE_ID = '2d77ec71623f806f92b5f1c87e6043a4'
         // ============================================================
 
         let selectedItemsTotal = 0;
         let selectedItemNames = new Set();
         let lastDebugInfo = "데이터 로딩 전";
+
+        let currentBalance = 0;
 
         function getSafeNumber(prop) {
             if (!prop) return 0;
@@ -347,6 +351,7 @@
                          lastDebugInfo = debugStatus;
                     }
                     
+                    currentBalance = foundMoney;
                     
                     balanceDisplayElement.innerText = `₩${foundMoney.toLocaleString()}`;
 
@@ -375,16 +380,18 @@
 
             data.forEach(item => {
                 const name = item.properties[COLUMN_NAME]?.title[0]?.plain_text || "이름 없음";
-                const price = item.properties[COLUMN_PRICE]?.number || 0;
+                const price = getSafeNumber(item.properties[COLUMN_PRICE]);
                 
                 let imageUrl = "https://via.placeholder.com/50/ffebee/e57373?text=♥";
                 const imageProp = item.properties[COLUMN_IMAGE];
                 if (imageProp?.files && imageProp.files.length > 0) {
                     imageUrl = imageProp.files[0].file?.url || imageProp.files[0].external?.url;
                 }
+                const pageId = item.id;
 
                 const div = document.createElement('div');
                 div.className = 'shop-item';
+                div.dataset.id = pageId;
                
 div.innerHTML = `
     <img src="${imageUrl}" class="item-image" alt="${name}" onerror="this.onerror=null; this.src='https://via.placeholder.com/50/eee/aaa?text=x'">
@@ -414,20 +421,76 @@ div.innerHTML = `
 
             selectedItemsTotal = tempTotal;
         }
+        async function purchase() {
+            if (selectedItemsTotal === 0) {
+                alert("아이템을 선택해주세요.");
+                return;
 
-        function purchase() {
-            if (selectedItemsTotal > 0) {
-                if (confirm(`총 ${selectedItemsTotal.toLocaleString()}원을 구매하시겠습니까?`)) {
-                    alert("구매가 완료되었습니다! (가상)");
-                    const allItems = document.querySelectorAll('.shop-item');
-                    allItems.forEach(item => item.classList.remove('selected'));
-                    selectedItemsTotal = 0;
-                    selectedItemNames.clear();
-                }
+                if (selectedItemsTotal > currentBalance) {
+                alert(`잔액이 부족합니다!`);
+                return; 
+            }
             } else {
-                alert("구매할 아이템을 먼저 선택해주세요.");
+                const names = Array.from(selectedItemNames);
+                const firstName = names[0];
+                let displayName = firstName;
+
+                if (names.length > 1) {
+                    displayName = `${firstName} 외 ${names.length - 1}건`;
+                }
+
+                if (confirm(`${displayName}을(를) 구매하시겠습니까?`)) {
+                    
+                    // 1. 선택된 아이템들의 ID만 추출
+                    const selectedIds = [];
+                    document.querySelectorAll('.shop-item.selected').forEach(item => {
+                        selectedIds.push(item.dataset.id);
+                    });
+
+                    try {
+                        // 2. 서버로 보낼 데이터 생성 (관계형 연결 요청)
+                        const updateBody = {
+                            pageIds: selectedIds,
+                            properties: {
+                                // ▼▼▼ [핵심] 관계형 속성 업데이트 ▼▼▼
+                                [COLUMN_RELATION]: { 
+                                    "relation": [
+                                        { "id": TARGET_PAGE_ID } 
+                                    ] 
+                                }
+                            
+                                , "상태": { "select": { "name": "구매완료" } }
+                            }
+                        };
+
+                        const response = await fetch('/api/reretry', { 
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(updateBody), 
+                        });
+
+                        if (response.ok) {
+                            alert("구매 성공! '산 아이템' 페이지에 추가되었습니다.");
+                            
+                            // 화면 초기화
+                            const allItems = document.querySelectorAll('.shop-item');
+                            allItems.forEach(item => item.classList.remove('selected'));
+                            selectedItemsTotal = 0;
+                            selectedItemNames.clear();
+                        } else {
+                            alert("서버 오류: 연결에 실패했습니다.");
+                        }
+
+                    } catch (error) {
+                        console.error(error);
+                        alert("네트워크 오류가 발생했습니다.");
+                    }
+                }
             }
         }
+
+        
+
 
         fetchItems();
 
